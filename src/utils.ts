@@ -21,6 +21,41 @@ import { print } from 'graphql';
 import { useSelector } from '@xstate/react';
 import { NextRouter } from 'next/router';
 
+export const handlerRemap = (data: any) => {
+  const states = data.states.reduce(
+    (acc: any, { id, type, entryActions }: any) => {
+      const findTransition = data.transitions.find((el: any) => el.source === id);
+      if (findTransition === undefined) return acc;
+
+      acc[id] = {
+        tags: [type],
+        on: {
+          [findTransition.event]: {
+            target: findTransition.target,
+            actions: findTransition.actions?.map((action: any) => action.type),
+          },
+        },
+        entry: entryActions?.map((el: any) => el.type),
+      };
+
+      return acc;
+    },
+    {}
+  );
+
+  data.endStates.forEach((el: any) => {
+    states[el] = {
+      type: 'final',
+    };
+  });
+
+  return {
+    id: data.id,
+    initial: data.initialState,
+    states,
+  };
+};
+
 export function isNullEvent(eventName: string) {
   return eventName === ActionTypes.NullEvent;
 }
@@ -36,16 +71,16 @@ export function isInternalEvent(eventName: string) {
 
 export function createInterpreterContext<
   TInterpreter extends Interpreter<any, any, any>,
->(displayName: string) {
+  >(displayName: string) {
   const [Provider, useContext] =
     createRequiredContext<TInterpreter>(displayName);
 
   const createUseSelector =
     <Data>(selector: (state: TInterpreter['state']) => Data) =>
-    () => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      return useSelector(useContext(), selector);
-    };
+      () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        return useSelector(useContext(), selector);
+      };
 
   return [Provider, useContext, createUseSelector] as const;
 }
@@ -71,7 +106,7 @@ export interface Edge<
   TContext,
   TEvent extends AnyEventObject,
   TEventType extends TEvent['type'] = string,
-> {
+  > {
   event: TEventType;
   source: StateNode<TContext, any, TEvent>;
   target: StateNode<TContext, any, TEvent>;
