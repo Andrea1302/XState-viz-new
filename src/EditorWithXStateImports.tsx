@@ -93,7 +93,7 @@ export const EditorWithXStateImports = (
   return (
     <Editor
       defaultPath="main.ts"
-      defaultLanguage="typescript"
+      defaultLanguage="json"
       value={props.value}
       options={{
         minimap: { enabled: false },
