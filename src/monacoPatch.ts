@@ -47,7 +47,7 @@ const MONACO_LOCATION =
 
 monacoLoader.config({
   paths: {
-    vs: MONACO_LOCATION,
+    vs: `https://unpkg.com/monaco-editor@0.25.2/min/vs`,
   },
 });
 
