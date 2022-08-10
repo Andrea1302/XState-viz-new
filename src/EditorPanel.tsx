@@ -1,4 +1,4 @@
-import { AddIcon } from '@chakra-ui/icons';
+import { AddIcon, SpinnerIcon } from '@chakra-ui/icons';
 import {
   Box,
   Button,
@@ -350,24 +350,24 @@ const getPersistTextAndIcon = (
 };
 
 export const EditorPanel: React.FC<{
-  onSave: () => void;
-  onFork: () => void;
-  onCreateNew: () => void;
+  // onSave: () => void;
+  // onFork: () => void;
+  // onCreateNew: () => void;
   onChange: (machine: AnyStateMachine[]) => void;
   onChangedCodeValue: (code: string) => void;
-}> = ({ onSave, onChange, onChangedCodeValue, onFork, onCreateNew }) => {
-  // const [valueData, setValueData] = useState('')
-  // useEffect(() => {
-  //   fetchFunc()
-  // }, [])
-  // const fetchFunc = () => {
-  //   fetch('https://run.mocky.io/v3/7267e6de-fd63-45ab-b438-0383613dfc00').then(res => {
-  //     return res.json()
-  //   }).then((response) => {
-  //     console.log(response, 'response')
-  //     setValueData(JSON.stringify(response))
-  //   })
-  // }
+}> = ({ onChange, onChangedCodeValue }) => {
+  const [valueData, setValueData] = useState('')
+  useEffect(() => {
+    fetchFunc()
+  }, [])
+  const fetchFunc = () => {
+    fetch('https://run.mocky.io/v3/7267e6de-fd63-45ab-b438-0383613dfc00').then(res => {
+      return res.json()
+    }).then((response) => {
+      console.log(response, 'response')
+      setValueData(JSON.stringify(response))
+    })
+  }
   const embed = useEmbed();
   const authService = useAuth();
   const [authState] = useActor(authService);
@@ -407,139 +407,50 @@ export const EditorPanel: React.FC<{
   const isVisualizing = current.hasTag('visualizing');
 
   return (
+
     <>
-      {simulationMode === 'visualizing' && (
-        <CommandPalette
-          onSave={() => {
-            onSave();
-          }}
-          onVisualize={() => {
-            send('COMPILE');
-          }}
-        />
-      )}
       <Box
         height="100%"
         display="grid"
         gridTemplateRows="1fr auto"
         data-testid="editor"
       >
-        {simulationMode === 'visualizing' && (
-          <>
-            {/* This extra div acts as a placeholder that is supposed to stretch while EditorWithXStateImports lazy-loads (thanks to `1fr` on the grid) */}
-            <div style={{ minHeight: 0, minWidth: 0 }}>
+        <>
+          {/* This extra div acts as a placeholder that is supposed to stretch while EditorWithXStateImports lazy-loads (thanks to `1fr` on the grid) */}
+          <div style={{ minHeight: 0, minWidth: 0 }}>
+            {
+              valueData !== '' &&
               <EditorWithXStateImports
-                // value={valueData}
-                value={value}
+                value={valueData}
                 onMount={(standaloneEditor, monaco) => {
                   send({
                     type: 'EDITOR_READY',
                     monacoRef: monaco,
                     standaloneEditorRef: standaloneEditor,
                   });
+                  setTimeout(function () {
+                    standaloneEditor.getAction('editor.action.formatDocument').run();
+                  }, 300);
                 }}
                 onChange={(code) => {
                   send({ type: 'EDITOR_CHANGED_VALUE', code });
                 }}
-                onFormat={() => {
-                  send({
-                    type: 'COMPILE',
-                  });
-                }}
-                onSave={() => {
-                  onSave();
-                }}
               />
-            </div>
-            <HStack padding="2" w="full" justifyContent="space-between">
-              <HStack>
-                {!(embed?.isEmbedded && embed.readOnly) && (
-                  <Tooltip
-                    bg="black"
-                    color="white"
-                    label={`${getPlatformMetaKeyLabel()} + Enter`}
-                    closeDelay={500}
-                  >
-                    <Button
-                      disabled={isVisualizing}
-                      isLoading={isVisualizing}
-                      leftIcon={
-                        <MagicIcon fill="gray.200" height="16px" width="16px" />
-                      }
-                      onClick={() => {
-                        send({
-                          type: 'COMPILE',
-                        });
-                      }}
-                      variant="secondary"
-                    >
-                      Visualize
-                    </Button>
-                  </Tooltip>
-                )}
-                {!embed?.isEmbedded && (
-                  <Tooltip
-                    bg="black"
-                    color="white"
-                    label={`${getPlatformMetaKeyLabel()} + S`}
-                    closeDelay={500}
-                  >
-                    <Button
-                      isLoading={sourceState.hasTag('persisting')}
-                      disabled={sourceState.hasTag('persisting')}
-                      onClick={() => {
-                        onSave();
-                      }}
-                      leftIcon={
-                        <persistMeta.Icon
-                          fill="gray.200"
-                          height="16px"
-                          width="16px"
-                        />
-                      }
-                      variant="outline"
-                    >
-                      {persistMeta.text}
-                    </Button>
-                  </Tooltip>
-                )}
-                {sourceOwnershipStatus === 'user-owns-source' &&
-                  !embed?.isEmbedded && (
-                    <Button
-                      disabled={sourceState.hasTag('forking')}
-                      isLoading={sourceState.hasTag('forking')}
-                      onClick={() => {
-                        onFork();
-                      }}
-                      leftIcon={
-                        <ForkIcon fill="gray.200" height="16px" width="16px" />
-                      }
-                      variant="outline"
-                    >
-                      Fork
-                    </Button>
-                  )}
-              </HStack>
-              {sourceOwnershipStatus !== 'no-source' && !embed?.isEmbedded && (
-                <Button
-                  leftIcon={<AddIcon fill="gray.200" />}
-                  onClick={onCreateNew}
-                  variant="outline"
-                >
-                  New
-                </Button>
-              )}
-            </HStack>
-          </>
-        )}
-        {simulationMode === 'inspecting' && (
-          <Box padding="4">
-            <Text as="strong">Inspection mode</Text>
-            <Text>
-              Services from a separate process are currently being inspected.
-            </Text>
-          </Box>
-        )}
+            }
+          </div>
+          <div>
+            <Button
+              disabled={isVisualizing}
+              onClick={() => {
+                send({
+                  type: 'COMPILE',
+                });
+              }}
+            >
+              Visualize
+            </Button>
+          </div>
+        </>
       </Box>
     </>
   );
